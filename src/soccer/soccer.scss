@@ -351,6 +351,10 @@ $ease: cubic-bezier(.16, 1, .3, 1);
 .sc-token:hover .sc-figure { transform: translateY(-.3rem); }
 .sc-tokens .sc-token.selected { background: none; box-shadow: none; .sc-figure::after { background: $accent; box-shadow: 0 0 1.6rem $accent; } .sc-figure { transform: translateY(-.4rem); } }
 .sc-teaminfo { &.team1 { box-shadow: inset 0 .3rem 0 $accent, inset 0 0 0 .1rem $line; } &.team2 { box-shadow: inset 0 .3rem 0 $bib, inset 0 0 0 .1rem $line; } &.over { box-shadow: inset 0 0 0 .2rem $accent; } }
+/* kit parts of the full-body player */
+.sc-jersey { width: 4.6rem !important;
+    .sc-skin { fill: var(--skin); } .sc-sock { fill: $accent; } .sc-shorts { fill: #10281c; stroke: rgba(255, 255, 255, .12); stroke-width: .8; } .sc-boot { fill: #0a0f0c; }
+    .team2 & .sc-sock { fill: $bib; } .team2 & .sc-shorts { fill: #26352e; } }
 /* strength number ticks when it changes (keyed in JSX) */
 .sc-half-score b { display: inline-block; animation: sc-tick .4s $ease; }
 @keyframes sc-tick { 0% { transform: scale(1.6); filter: brightness(1.6); } 100% { transform: none; filter: none; } }
@@ -509,8 +513,8 @@ $ease: cubic-bezier(.16, 1, .3, 1);
         &.team1::before, &.team1::after { top: 0; border-left: .3rem solid $chalk; border-top: 0; }
         &.team2::before, &.team2::after { bottom: 0; right: 28%; border-right: .3rem solid $chalk; border-bottom: 0; } &.team2::after { right: 40%; } }
     .sc-tokens { min-height: 46rem;
-        .sc-token, .sc-slot { width: 8.4rem; left: calc(var(--l) * 1%); top: calc(var(--d) * 1%); }
-        .team2 & .sc-token, .team2 & .sc-slot { left: calc(var(--l) * 1%); top: calc((100 - var(--d)) * 1%); } }
+        .sc-token, .sc-slot { width: 8.4rem; left: calc(var(--l) * 1%); top: calc(var(--d) * 1.35%); }
+        .team2 & .sc-token, .team2 & .sc-slot { left: calc(var(--l) * 1%); top: calc(100% - var(--d) * 1.35%); } }
     /* split tab on phones: thumb-reach action bar, compact team cards */
     .sc-split { padding-bottom: 8rem; }
     .sc-split-bar .sc-row-gap { position: fixed; z-index: 40; left: 0; right: 0; bottom: 0; flex-wrap: nowrap; gap: .8rem; padding: 1rem 1.6rem calc(1rem + env(safe-area-inset-bottom));
@@ -518,7 +522,8 @@ $ease: cubic-bezier(.16, 1, .3, 1);
         .sc-btn { flex: 1; justify-content: center; height: 4.8rem; } .sc-btn.ghost { flex: 0 0 auto; } }
     .sc-teaminfos { grid-template-columns: 1fr 1fr; gap: 1rem; .sc-balance { grid-column: 1 / -1; grid-row: 1; justify-self: center; } }
     .sc-teaminfo { padding: 1rem 1.2rem; gap: .6rem; .sc-half-head h3 { font-size: 2.2rem; } .sc-half-score { padding: .4rem .9rem; b { font-size: 2.4rem; } small { display: none; } } .sc-tier-count { display: none; } }
-    .sc-bench { overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; > * { flex-shrink: 0; } }
+    .sc-bench { overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; > * { flex-shrink: 0; }
+        -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); mask-image: linear-gradient(90deg, #000 85%, transparent); padding-right: 3rem; }
     .sc-split-actions { flex-direction: column; align-items: stretch; .sc-btn { width: 100%; } }
     .sc-save-match { flex-direction: column; align-items: stretch; .sc-select { justify-content: space-between; select { flex: 1; } } }
 }

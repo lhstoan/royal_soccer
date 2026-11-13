@@ -32,9 +32,18 @@ function initialZones(state: SoccerState): Record<string, Zone> {
   return zones;
 }
 
-/** Shirt with the member's number, like a starting-XI graphic. */
-const Jersey = ({ number }: { number: number | null }) => (
-  <svg className="sc-jersey" viewBox="0 0 64 60" aria-hidden="true">
+const SKIN = ['#f1c9a5', '#e0ac82', '#c68a63', '#8d5a3b'];
+const skinOf = (id: string) => SKIN[Array.from(id).reduce((h, c) => h + c.charCodeAt(0), 0) % SKIN.length];
+
+/** Full kit under the avatar head: shirt with number, shorts, bare legs, socks and boots. */
+const Jersey = ({ number, id }: { number: number | null; id: string }) => (
+  <svg className="sc-jersey" viewBox="0 0 64 98" aria-hidden="true" style={{ '--skin': skinOf(id) } as React.CSSProperties}>
+    <rect className="sc-skin" x="17" y="72" width="11" height="14" rx="3" />
+    <rect className="sc-skin" x="36" y="72" width="11" height="14" rx="3" />
+    <rect className="sc-sock" x="16.5" y="82" width="12" height="11" rx="2" />
+    <rect className="sc-sock" x="35.5" y="82" width="12" height="11" rx="2" />
+    <path className="sc-boot" d="M15 92h14.5v5.2H12.5c0-2.600 1-4.200 2.500-5.200Zm19.500 0H49c1.500 1 2.500 2.600 2.500 5.200H34.500Z" />
+    <path className="sc-shorts" d="M14 54h36l3 22H34.500l-2.500-9-2.500 9H11Z" />
     <path d="M20 2 8 8 1 22l10 6 4-5v35h34V23l4 5 10-6-7-14-12-6c-3 6-21 6-24 0Z" />
     <path className="sc-shade" d="M32 7.6V58h17V23l4 5 10-6-7-14-12-6c-1.4 3-6.4 5.4-12 5.6Z" />
     <path className="sc-collar" d="M23.5 3.2c3.4 6.2 13.6 6.2 17 0" />
@@ -252,7 +261,7 @@ const TeamSplitTab = ({ state, isAdmin, onSaveToMatch }: Props) => {
       }}>
       <span className="sc-grip" aria-hidden="true"><i className="bx bx-grid-vertical"></i></span>
       {variant === 'token'
-        ? <span className="sc-token-avatar sc-figure"><Avatar member={m} size={36} /><Jersey number={m.number} /></span>
+        ? <span className="sc-token-avatar sc-figure"><Avatar member={m} size={36} /><Jersey number={m.number} id={m.id} /></span>
         : <span className="sc-token-avatar"><Avatar member={m} size={30} /><span className={`sc-tier t${m.tier}`}>{TIERS[m.tier].label}</span></span>}
       <span className="sc-token-name">{m.name}</span>
     </button>
