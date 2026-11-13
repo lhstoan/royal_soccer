@@ -549,3 +549,14 @@ $ease: cubic-bezier(.16, 1, .3, 1);
 @keyframes sc-glow { from { opacity: .55; } to { opacity: 1; } }
 .sc-body .sparkle { transform-box: fill-box; transform-origin: center; animation: sc-twinkle 1.2s ease-in-out infinite; }
 .sc-body .glow { animation: sc-glow .7s ease-in-out infinite alternate; }
+
+/* avatar rings: no inline baseline gap, so the photo sits dead centre in its ring */
+.sc-avatar { vertical-align: middle; }
+.sc-card-avatar { display: flex; align-items: center; justify-content: center; line-height: 0; }
+.sc-card-avatar > img.sc-avatar { display: block; }
+.sc-card-avatar > span.sc-avatar { display: grid; }
+img.sc-avatar { display: block; }
+.sc-token-avatar { line-height: 0; }
+
+/* initials: Barlow Condensed caps sit ~.045em low in the line box, so nudge them up to the optical centre */
+span.sc-avatar { padding-bottom: .09em; box-sizing: border-box; }
