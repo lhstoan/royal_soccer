@@ -1,6 +1,5 @@
 import React from 'react';
 
-const SKIN = '#e9c4a3';
 const OUTLINE = 'rgba(8, 18, 12, .55)';
 
 // x, y, scale, delay for the twinkling stars around the trophy.
