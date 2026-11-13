@@ -1,0 +1,139 @@
+'use strict';
+
+/**
+ * Fixed-window rate limiting for the /soccer API (PIN attempts, uploads).
+ *
+ * Serverless instances don't share memory, so an in-memory counter alone is
+ * not a real limit. When Upstash Redis credentials are configured (free tier,
+ * or the Upstash integration from the Vercel Marketplace) counters are shared
+ * across every instance via Upstash's REST API — no extra dependency needed.
+ * Without them we fall back to a per-instance in-memory limiter, which only
+ * slows down bursts hitting the same warm instance. See README for details.
+ */
+
+const crypto = require('crypto');
+
+const REST_PAIRS = [
+  ['UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN'],
+  ['KV_REST_API_URL', 'KV_REST_API_TOKEN'],
+];
+
+/**
+ * Finds Upstash REST credentials. Accepts Upstash's own names, the names the
+ * Vercel Marketplace integration injects, the same names with a custom prefix
+ * (e.g. STORAGE_KV_REST_API_URL), or an Upstash REDIS_URL / KV_URL, whose
+ * password doubles as the REST token.
+ */
+function getRedisConfig(env = process.env) {
+  const keys = Object.keys(env);
+  for (const [urlName, tokenName] of REST_PAIRS) {
+    const urlKey = keys.find((k) => k === urlName || k.endsWith(`_${urlName}`));
+    if (!urlKey) continue;
+    const prefix = urlKey.slice(0, urlKey.length - urlName.length);
+    const url = env[urlKey];
+    const token = env[`${prefix}${tokenName}`];
+    if (url && token) return { url: url.replace(/\/+$/, ''), token };
+  }
+  const connKey = keys.find((k) => /(^|_)(REDIS_URL|KV_URL)$/.test(k) && /upstash\.io/i.test(env[k] || ''));
+  if (connKey) {
+    try {
+      const parsed = new URL(env[connKey]);
+      if (parsed.password) return { url: `https://${parsed.hostname}`, token: decodeURIComponent(parsed.password) };
+    } catch (err) {
+      // not a URL; ignore
+    }
+  }
+  return null;
+}
+
+/** Names (never values) of env vars that look Redis-related; used for setup hints. */
+function redisEnvNames(env = process.env) {
+  return Object.keys(env).filter((k) => /REDIS|(^|_)KV_/.test(k)).sort();
+}
+
+/** Hash the IP so raw visitor addresses are never stored. */
+function hashClient(ip) {
+  const salt = process.env.RATE_LIMIT_SALT || 'royal-soccer';
+  return crypto.createHash('sha256').update(`${salt}:${ip}`).digest('hex').slice(0, 24);
+}
+
+async function incrementRedis(redis, rules) {
+  const commands = rules.flatMap((r) => [['INCR', r.key], ['EXPIRE', r.key, String(r.ttl)]]);
+  const response = await fetch(`${redis.url}/pipeline`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${redis.token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(commands),
+    signal: AbortSignal.timeout(2000),
+  });
+  if (!response.ok) throw new Error(`Upstash responded ${response.status}`);
+  const results = await response.json();
+  return rules.map((_, i) => {
+    const entry = results[i * 2];
+    if (!entry || entry.error) throw new Error(`Upstash error: ${entry && entry.error}`);
+    return Number(entry.result);
+  });
+}
+
+async function peekRedis(redis, rules) {
+  const response = await fetch(`${redis.url}/pipeline`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${redis.token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(rules.map((r) => ['GET', r.key])),
+    signal: AbortSignal.timeout(2000),
+  });
+  if (!response.ok) throw new Error(`Upstash responded ${response.status}`);
+  const results = await response.json();
+  return rules.map((_, i) => {
+    if (!results[i] || results[i].error) throw new Error(`Upstash error: ${results[i] && results[i].error}`);
+    return Number(results[i].result || 0);
+  });
+}
+
+const memoryCounters = new Map();
+
+function incrementMemory(rules, now) {
+  if (memoryCounters.size > 5000) {
+    for (const [key, value] of memoryCounters) {
+      if (value.resetAt <= now) memoryCounters.delete(key);
+    }
+  }
+  return rules.map((r) => {
+    const entry = memoryCounters.get(r.key) || { count: 0, resetAt: r.resetAt };
+    entry.count += 1;
+    memoryCounters.set(r.key, entry);
+    return entry.count;
+  });
+}
+
+/**
+ * A single fixed-window counter for any other endpoint (e.g. failed admin PIN
+ * attempts). Same storage and fail-open behaviour as checkRateLimit.
+ */
+async function hitLimit(name, ip, { limit, windowSeconds, peek = false, now = Date.now(), env = process.env, logger = console }) {
+  const windowIndex = Math.floor(now / (windowSeconds * 1000));
+  const rules = [{
+    key: `${name}:rl:${hashClient(ip || 'unknown')}:${windowIndex}`,
+    limit,
+    ttl: windowSeconds,
+    resetAt: (windowIndex + 1) * windowSeconds * 1000,
+  }];
+  const redis = getRedisConfig(env);
+  let counts;
+  if (redis) {
+    try {
+      counts = peek ? await peekRedis(redis, rules) : await incrementRedis(redis, rules);
+    } catch (err) {
+      logger.error(`[${name}] rate limit store unavailable, using in-memory fallback:`, err.message);
+    }
+  }
+  if (!counts) counts = peek ? rules.map((r) => (memoryCounters.get(r.key) || { count: 0 }).count) : incrementMemory(rules, now);
+  // peek: "is there room for one more?"; increment: "was this one within the limit?"
+  const allowed = peek ? counts[0] < limit : counts[0] <= limit;
+  return { allowed, retryAfter: allowed ? 0 : Math.max(1, Math.ceil((rules[0].resetAt - now) / 1000)) };
+}
+
+function resetMemoryRateLimit() {
+  memoryCounters.clear();
+}
+
+module.exports = { hitLimit, getRedisConfig, redisEnvNames, resetMemoryRateLimit };

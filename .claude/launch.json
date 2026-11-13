@@ -1,0 +1,7 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "soccer-dev", "runtimeExecutable": "npm", "runtimeArgs": ["start"], "port": 3000, "autoPort": true },
+    { "name": "soccer-api", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev:api"], "port": 3010 }
+  ]
+}
