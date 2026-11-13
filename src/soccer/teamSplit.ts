@@ -1,7 +1,7 @@
 import { Member } from './types';
 import { teamPower } from './utils';
 
-function shuffle<T>(items: T[], rng: () => number): T[] {
+export function shuffle<T>(items: T[], rng: () => number = Math.random): T[] {
   const a = [...items];
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
