@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Member, SoccerState } from '../types';
 import { TIERS, monthKey, slugify, uniqueId } from '../utils';
 import Avatar from './Avatar';
+import PodiumFigure from './PodiumFigure';
 
 interface Props {
   state: SoccerState;
@@ -48,16 +49,24 @@ const MembersTab = ({ state, isAdmin, onOpen, onAdd }: Props) => {
       {topScorers.length > 0 && (
         <div className="sc-scorers">
           <h3><i className="bx bx-trophy" aria-hidden="true"></i> Vua phá lưới</h3>
-          <ol>
-            {topScorers.map((m, i) => (
-              <li key={m.id} className={`p${i + 1}`}>
-                <span className="sc-rank">{i + 1}</span>
-                <Avatar member={m} size={40} />
-                <span className="sc-grow">{m.name}</span>
-                <b>{m.goals}<small> bàn</small></b>
-              </li>
-            ))}
-          </ol>
+          <div className="sc-podium" role="list">
+            {[1, 0, 2].filter((i) => topScorers[i]).map((i) => {
+              const m = topScorers[i];
+              return (
+                <div key={m.id} role="listitem" className={`sc-podium-slot p${i + 1}`}>
+                  <div className="sc-figure">
+                    <span className="sc-head"><Avatar member={m} size={64} /></span>
+                    <PodiumFigure rank={(i + 1) as 1 | 2 | 3} />
+                  </div>
+                  <div className="sc-step">
+                    <span className="sc-medal">{i + 1}</span>
+                    <span className="sc-podium-name">{m.name}</span>
+                    <b>{m.goals}<small> bàn</small></b>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
