@@ -180,7 +180,6 @@ const SoccerPage = () => {
     <div className="sc-page">
       <header className="sc-header">
         <div className="sc-wrap sc-header-row">
-          <a className="sc-back" href="/" aria-label="Về trang portfolio"><i className="bx bx-arrow-back"></i></a>
           <div className="sc-title">
             <h1><i className="bx bx-football" aria-hidden="true"></i>Đội bóng</h1>
           </div>
